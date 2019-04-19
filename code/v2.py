@@ -4,7 +4,7 @@ Created on 2019/4/14 14:47
 
 @author: WangYuhang
 
-@function:
+@function:逐点扫描法生成Voronoi图
 """
 import sys
 
@@ -53,9 +53,15 @@ def JudgeXY(x_in, y_in, points):
         # 其他点与生长源之间的加权距离
         D = Common.getDistance(points[i].x, points[i].y, x_in, y_in) / float(v)
 
+        print('第 %s 个生长源的加权距离 %s' %(i,D))
+        print('第 %s 个生长源第 %s 扇区' % (i, sectorIndex))
+
+        # 判断非生长源点到生长源之间的加权距离
         if D < minD:
             minD = D
-            index = (i, sectorIndex)
+            index = (i, sectorIndex)# 注意for循环的范围
+
+    print('JudgeXY返回值(%s,%s)' %(index[0],index[1]))
 
     return index
 
@@ -84,9 +90,13 @@ def createVoronoi(length, width, points):
     """
     Arr = Common.initializeArr(length, width, points)# 生成包含生长源位置信息和个数信息的数组列表
 
+    print('生长源信息')
+    for i in range(width):
+        print(Arr[i][0:])
+
     # 遍历每个元素，对非生长源的点进行处理
     for i in range(length):
-        print("第%d行" % (i))
+        print("-- 第%d行 --" % (i))
         for j in range(width):
             if (Arr[i][j][0] == -1):
                 index = JudgeXY(i, j, points)
@@ -96,27 +106,37 @@ def createVoronoi(length, width, points):
 
 if __name__=='__main__':
     points=[]
-    length=500
-    width=500
-    count=10
+    length=100
+    width=100
+    count=4
 
     # 随机生成生长源
     for i in range(count):
         points.append(Common.getRndPoint(length,width))
+        print('第 %s 个生长源：坐标（%s,%s）扇区权重%s 扇区方向角%s \n扇区RGB颜色%s' %(i,points[i].x,points[i].y,points[i].vs,points[i].ts,points[i].colors))
+
 
     #包含生长源和非生长源的其他点的信息数组列表
     Arr = createVoronoi(length, width, points)
 
+    print('所有点信息')
+    for i in range(width):
+        print(Arr[i][0:])
+
     # 得到非生长源的其他点的涂色数组列表
     ArrRGB = Common.getArrRgb(length, width, Arr, points)
+
 
     # 得到生长源V区域的边界信息数组列表
     ArrLine = Common.getArrLine(length, width, Arr)
 
     # 画填充的彩色Vonoroi图
-    img = Image.fromarray(ArrRGB, "RGB")
+    img = Image.fromarray(ArrRGB, "RGB")# 彩色图像，使用参数'RGB'
+    img.save('../result/color.bmp')
     img.show()
 
+
     # 画Vonoroi图边界
-    img2 = Image.fromarray(ArrLine, "L")
+    img2 = Image.fromarray(ArrLine, "L")# 灰度图像，使用参数'L'
+    img2.save('../result/black.bmp')
     img2.show()
