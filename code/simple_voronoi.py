@@ -3,6 +3,8 @@
 Created on Sun Apr 7 21:30:00 2018
 
 @author: WYH
+
+@function:生成简单的Voronoi图
 """
 
 import numpy as np

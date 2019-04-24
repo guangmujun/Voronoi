@@ -10,8 +10,8 @@ import sys
 
 # Python Imaging Library图像处理标准库（#python3中安装：pip install Pillow）
 from PIL import Image
-
 from reference import Common
+import pickle
 
 
 def JudgeXY(x_in, y_in, points):
@@ -106,14 +106,18 @@ def createVoronoi(length, width, points):
 
 if __name__=='__main__':
     points=[]
-    length=100
-    width=100
+    length=400
+    width=400
     count=4
 
     # 随机生成生长源
-    for i in range(count):
-        points.append(Common.getRndPoint(length,width))
-        print('第 %s 个生长源：坐标（%s,%s）扇区权重%s 扇区方向角%s \n扇区RGB颜色%s' %(i,points[i].x,points[i].y,points[i].vs,points[i].ts,points[i].colors))
+    # for i in range(count):
+    #     points.append(Common.getRndPoint(length,width))
+    #     print('第 %s 个生长源：坐标（%s,%s）扇区权重%s 扇区方向角%s \n扇区RGB颜色%s' %(i,points[i].x,points[i].y,points[i].vs,points[i].ts,points[i].colors))
+
+    pkl_file = open('./data_400_400_4.pkl', 'rb')
+    points = pickle.load(pkl_file)
+    pkl_file.close()
 
 
     #包含生长源和非生长源的其他点的信息数组列表
@@ -125,6 +129,7 @@ if __name__=='__main__':
 
     # 得到非生长源的其他点的涂色数组列表
     ArrRGB = Common.getArrRgb(length, width, Arr, points)
+    print(ArrRGB)
 
 
     # 得到生长源V区域的边界信息数组列表
