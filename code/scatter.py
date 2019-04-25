@@ -4,7 +4,7 @@ Created on 2019/4/22 9:33
 
 @author: WangYuhang
 
-@function:传统离散算法
+@function:离散构造算法
 """
 
 
@@ -17,111 +17,33 @@ from reference import Common
 import datetime
 
 
-def JudgeXY(x_in, y_in, points):
+def judgeColor(points, flag, ArrRGB, k, h, xyRGB, length, width, angle120):
     """
-    判定非生长源的其他点位于每个生长源的哪一个扇区
-
+    为栅格坐标涂色并返回对应的标志位
     Parameters
     ----------
-    x_in, y_in :
-        其他点的坐标
-    points：
-        生长源集合
+    flag :
+        扩张终止标志位
+    ArrRGB :
+        涂色数组
+    k, h :
+        扩张次数和扩张终止的标志位
+    xyRGB:
+        栅格坐标
+    angle120 :
+        扩张角度超过120度的栅格坐标
 
     Returns
     -------
-    index：index = (i, sectorIndex)
-        其他点位于每个的生长源的哪一个扇区
+    flag：
+        扩张终止标志位
+    ArrRGB:
+        更新后的涂色数组
+    k, h:
+        更新后的扩张次数和扩张终止的标志位
     """
-    index = (-1, -1)
-    minD = sys.maxsize# 系统的最大支持的长度
-
-    #判断栅格上其他点与生长源之间的关系
-    for i in range(len(points)):
-        ts = points[i].ts # 扇区方位角参数值
-        Angle = Common.getAngle(points[i].x, points[i].y, x_in, y_in)# 其他点与生长源之间夹角的大小（弧度制）
-
-        # 判断其他点在生长源的哪一个扇区
-        sectorIndex = -1
-        if (Angle >= ts[0] and Angle < ts[1]):
-            sectorIndex = 0
-        elif (Angle >= ts[1] and Angle < ts[2]):
-            sectorIndex = 1
-        else:
-            sectorIndex = 2
-
-        # 得到对应扇区的权重值
-        v = points[i].vs[sectorIndex]
-
-        # 其他点与生长源之间的加权距离
-        D = Common.getDistance(points[i].x, points[i].y, x_in, y_in) / float(v)
-
-        print('第 %s 个生长源的加权距离 %s' %(i,D))
-        print('第 %s 个生长源第 %s 扇区' % (i, sectorIndex))
-
-        # 判断非生长源点到生长源之间的加权距离
-        if D < minD:
-            minD = D
-            index = (i, sectorIndex)# 注意for循环的范围
-
-    print('JudgeXY返回值(%s,%s)' %(index[0],index[1]))
-
-    return index
-
-
-def getPoint(x_in,y_in):
-    R = 80
-    x = x_in - R
-    if x >= 0:
-        x = x
-    else:
-        x = 0
-
-    y = y_in - R
-    if y >= 0:
-        y = y
-    else:
-        y = 0
-    print('左上角坐标（%s,%s）' %(x,y))
-
-    if x+2*R > 400:
-        xb = 400
-    else:
-        xb = x+2*R
-
-    if y+2*R > 400:
-        yb = 400
-    else:
-        yb = y+2*R
-
-    return x,y,xb,yb
-
-def createLittleVoronoi(length, width, points):
-
-    Arr = Common.initializeArr(length, width, points)# 生成包含生长源位置信息和个数信息的数组列表
-
-    # print('生长源信息')
-    # for i in range(width):
-    #     print(Arr[i][0:])
-
-    ArrRGB = np.zeros(shape=[length, width, 3], dtype='uint8')  # 全0数组
-
-    # 遍历每个元素，对非生长源的点进行处理
-    for t in range(len(points)):
-        x,y,xb,yb = getPoint(points[t].x,points[t].y)
-        for i in range(x,xb):
-            for j in range(y,yb):
-                if (Arr[i][j][0] == -1):
-                    index = JudgeXY(i, j, points)
-                    Arr[i][j] = index
-                    ArrRGB[i][j] = points[Arr[i][j][0]].colors[Arr[i][j][1]]
-
-    return Arr,ArrRGB
-
-def judgeColor(points, flag, ArrRGB, k, h, xyRGB, length, width,angle120):
-
     for t in angle120:
-        t1,t2 = t
+        t1, t2 = t
         flag[t1][t2] = 1
 
     pkl_file2 = open('../data/xyRGBLast.pkl', 'rb')
@@ -143,7 +65,7 @@ def judgeColor(points, flag, ArrRGB, k, h, xyRGB, length, width,angle120):
                     k[i][j] = k[i][j] + 1
                 else:
                     flag[i][j] = 1  # flag为1表示得到的栅格坐标已经涂色
-                    k[i][j] = k[i][j] # 本轮不再扩张
+                    k[i][j] = k[i][j]  # 本轮不再扩张
 
             else:  # 栅格坐标为负时，扩张角度
                 k[i][j] = k[i][j] + 1
@@ -161,6 +83,19 @@ def judgeColor(points, flag, ArrRGB, k, h, xyRGB, length, width,angle120):
 
 
 def getRGB(points, rInrce, angleInrce):
+    """
+    计算扩张的栅格坐标
+    Parameters
+    ----------
+    angleInrce :
+        扩张的后的扇区方位角
+    r_inrce :
+        扩张的加权半径
+    Returns
+    -------
+    x_rgb, y_rgb：
+        每次扩张得出的栅格坐标
+    """
     xyRGB = []
     for i in range(len(points)):
         xi = points[i].x
@@ -178,30 +113,55 @@ def getRGB(points, rInrce, angleInrce):
 
 
 def getAngleInrce(points, k, angleInit):
+    """
+    计算扩张的角度增量
+    Parameters
+    ----------
+    k :
+        扩张的次数列表
+    r_inrce :
+        扩张的加权半径
+    Returns
+    -------
+    angleInrce：
+        扩张后的扇区方位角
+    angle120：
+        扩张角度超过120度的栅格坐标
+    """
     angleInrce = []
-    angle120 = [] # 记录扩张角度超过120度的栅格坐标
+    angle120 = []  # 记录扩张角度超过120度的栅格坐标
     for i in range(len(points)):
         vangle = []
         for j in range(0, 3):
 
             kThta = (k[i][j] + 1) * angleInit
-            if kThta > math.pi*2/3:
+            if kThta > math.pi * 2 / 3:
                 kThta = k[i][j] * angleInit
-                angle120.append((i,j))
-                print('扩张角度>120 %s,%s' %(i,j))
+                angle120.append((i, j))
+                print('扩张角度>120 %s,%s' % (i, j))
             else:
                 kThta = kThta
-
 
             t = points[i].ts[j] + kThta  # 第一次扩张时 k=1
             vangle.append(t)
         angleInrce.append(vangle)
     print('扩张角度为： %s' % (angleInrce))
 
-    return angleInrce,angle120
+    return angleInrce, angle120
 
 
 def getRadiusInrce(points, R):
+    """
+    计算加权扩张半径
+    Parameters
+    ----------
+    R :
+        每一轮的半径值
+    Returns
+    -------
+    r_inrce：
+        各个生长源各个扇区的加权扩张半径列表
+    """
     rInrce = []
     for i in range(len(points)):
         v = points[i].vs
@@ -212,27 +172,82 @@ def getRadiusInrce(points, R):
     return rInrce
 
 
-def createVoronoi(points,k, h,flag,angleInit,rInrce,ArrRGB,length,width):
+def createVoronoi(points,k,h,flag,angleInit,rInrce,ArrRGB,length,width):
+    """
+    内部循环的主函数
+    Parameters
+    ----------
+    k,h :
+        扩张次数和扩张终止的标志位
+    angleInit：
+        角度增量初始值
+    rInrce：
+        加权扩张半径
+    ArrRGB：
+        涂色数组
+    Returns
+    -------
+    f1：flag
+        扩张终止标志位
+    f2:ArrRGB
+        更新后的涂色数组
+    f3，f4: k, h
+        更新后的扩张次数和扩张终止的标志位
+    """
     # 确定单次扩张角度增量取值
-    angleInrce,angle120 = getAngleInrce(points, k, angleInit)
+    angleInrce, angle120 = getAngleInrce(points, k, angleInit)
 
     # 确定要涂色栅格的坐标
     xyRGB = getRGB(points, rInrce, angleInrce)
 
     f1, f2, f3, f4 = judgeColor(
-        points, flag, ArrRGB, k, h, xyRGB, length, width,angle120)  # k,h,falg,ArrRGB改变
+        points, flag, ArrRGB, k, h, xyRGB, length, width, angle120)  # k,h,falg,ArrRGB改变
 
     return f1, f2, f3, f4
 
 
 if __name__ == '__main__':
-
+    # 计算程序运行时间
     starttime = datetime.datetime.now()
 
+    # 初始化数据
     points = []
     length = 400
     width = 400
     count = 4
+
+    # 初始化上一次栅格的坐标
+    xyRGBLast = []
+    for i in range(count):
+        xyTemp = []
+        for j in range(0, 3):
+            xyTemp.append((0, 0))
+        xyRGBLast.append(xyTemp)
+
+    # 读取上一次栅格坐标的pkl文件
+    output = open('../data/xyRGBLast.pkl', 'wb')
+    pickle.dump(xyRGBLast, output)
+    output.close()
+
+    # 初始化
+    ArrRGB = np.zeros(shape=[length, width, 3], dtype='uint8')  # 全0数组
+
+    # 随机生成生长源
+    # for i in range(count):
+    #     points.append(Common.getRndPoint(length, width))  # 扇区权重设置在0.5-1之间
+    #     print(
+    #         '%s 生长源：\n坐标:（%s,%s）\n权重:%s \n方向角:%s \n颜色:%s' %
+    #         (i,
+    #          points[i].x,
+    #             points[i].y,
+    #             points[i].vs,
+    #             points[i].ts,
+    #             points[i].colors))
+
+    # 临时存储随机生长源的信息
+    # output = open('data_400_400_4.pkl', 'wb')
+    # pickle.dump(points, output)
+    # output.close()
 
     # 使用固定的生长源
     pkl_file = open('data_400_400_4.pkl', 'rb')
@@ -250,15 +265,13 @@ if __name__ == '__main__':
              points[i].ts,
              points[i].colors))
 
-    Arr,ArrRGB = createLittleVoronoi(length, width, points)
-
     angleInit = 1 / math.sqrt(math.pow(length, 2) + math.pow(width, 2))  # 弧度制
     print('--角度增量初始取值--： %s' % (angleInit))
-    R = 100
+    R = 1
     print('--扩张半径初始化值--：%s' % (R))
 
     cntRound = 0
-    while True:
+    while True:# 一次循环表示扩张一轮
         cntRound = cntRound + 1
         print('--扇区第 %s 轮扩张开始--' % (cntRound))
 
@@ -285,7 +298,7 @@ if __name__ == '__main__':
         rInrce = getRadiusInrce(points, R)
 
         cntTime = 0
-        while True:
+        while True:# 一次循环表示一轮扩张中的一次
             cntTime = cntTime + 1
             print('**扇区第 %s 次扩张开始**' % (cntTime))
             f1, f2, f3, f4 = createVoronoi(
@@ -294,15 +307,21 @@ if __name__ == '__main__':
                 print('**扇区一轮扩张结束**')
                 break
 
-        saveDic = '../result/v3/' + str(cntRound) + '.bmp'
+        # 保存图片
+        saveDic = '../result/' + str(cntRound) + '.bmp'
         img = Image.fromarray(f2, "RGB")
         img.save(saveDic)
 
-        if f4 != hfinish:
+        if f4 != hfinish:# 终止条件不满足
             R = R + 1
         else:
             print('--生成Voronoi图--')
             break
 
+    # img = Image.fromarray(f2, "RGB")  # 彩色图像，使用参数'RGB'
+    # img.save('../result/test2.bmp')
+    # img.show()
+
+    # 计算程序运行时间
     endtime = datetime.datetime.now()
     print("耗时(s)：" + str((endtime - starttime).seconds))
