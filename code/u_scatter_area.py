@@ -116,7 +116,7 @@ def judge_border(x_rgb, y_rgb, flag):
 
 def judge_xy(p, s, x_rgb, y_rgb, Arr):
     """
-    将栅格信息写入Arr中
+    将栅格信息写入Arr中，标记重叠区的栅格
     Parameters
     ----------
     p,s :
@@ -130,31 +130,51 @@ def judge_xy(p, s, x_rgb, y_rgb, Arr):
     Arr：
         内容更新
     """
+    inter_flag = (-2,-2)# 标记重叠区域
     index = (p, s)  # 生长源序号、对应扇区
     if Arr[x_rgb][y_rgb][0] == -1:  # 非生长源、非涂色栅格坐标
         Arr[x_rgb][y_rgb] = index
+    else:
+        if Arr[x_rgb][y_rgb][0] != p:# 非本生长源的已涂色栅格
+            Arr[x_rgb][y_rgb] = inter_flag# 标记此栅格
     return Arr
 
 
-def get_ArrRGB(Arr):
+def get_ArrRGB(Arr,inter_cnt,out_cnt):
     """
-    为Arr中栅格赋予RGB颜色
+    为Arr中栅格赋予RGB颜色，返回盲区和重叠区面积
     Parameters
     ----------
     Arr:
         包含全部栅格信息的数组
+    inter_cnt：
+        重叠区统计标志
+    out_cnt：
+        盲区统计标志
     Returns
     -------
     ArrRGB：
         涂色数组
+    inter_cnt,：
+        重叠区面积
+    out_cnt：
+        盲区面积
     """
     ArrRGB = np.zeros(shape=[length, width, 3], dtype='uint8')  # 全0数组
     for i in range(length):
         for j in range(width):
-            if (Arr[i][j][1] != -1):  # 栅格坐标
-                # Arr[i][j][0]代表生长源在集合中的序号,Arr[i][j][1]代表生长源扇区的序号
-                ArrRGB[i][j] = points[Arr[i][j][0]].colors[Arr[i][j][1]]
-    return ArrRGB
+            if (Arr[i][j][1] != -1):  # 要涂色的栅格坐标
+                if Arr[i][j] == (-2,-2): # 标记的栅格坐标
+                    ArrRGB[i][j] = [128, 128, 128]  # 设置成灰色
+                    inter_cnt = inter_cnt + 1  # 统计重叠区栅格
+                else:
+                    # Arr[i][j][0]代表生长源在集合中的序号,Arr[i][j][1]代表生长源扇区的序号
+                    ArrRGB[i][j] = points[Arr[i][j][0]].colors[Arr[i][j][1]]
+            elif Arr[i][j] == (-1,-1):
+                out_cnt = out_cnt + 1# 统计盲区栅格
+    print('重叠区面积： %s ' %(inter_cnt))
+    print('盲区面积： %s ' % (out_cnt))
+    return ArrRGB,inter_cnt,out_cnt
 
 
 def get_ArrLine(length, width, Arr):
@@ -199,6 +219,14 @@ if __name__ == '__main__':
     width = 500
     count = 10
 
+    # 初始话重叠栅格和盲区栅格计数
+    # inter_cnt = 0
+    # out_cnt = 0
+
+    # 限制生长源的最大扩张半径
+    R_limit = 100
+
+
     # 随机生成生长源
     # for i in range(count):
     #     points.append(Common.getRndPoint(length, width))
@@ -235,6 +263,10 @@ if __name__ == '__main__':
 
     while True:
         print('--第 %s 轮扩张--' % (R))
+        # 初始话重叠栅格和盲区栅格计数
+        inter_cnt = 0
+        out_cnt = 0
+
         # 扩张半径
         r_inrce = get_radius_inrce(R)
 
@@ -272,11 +304,11 @@ if __name__ == '__main__':
                 # print('各生长源单轮扩张结束')
                 break
 
-        # # 画颜色填充的Voronoi图
-        # ArrRGB = get_ArrRGB(Arr)
-        # img = Image.fromarray(ArrRGB, "RGB")  # 彩色图像，使用参数'RGB'
-        # dicname = '../result/optimization/' + str(R) + '.bmp'
-        # img.save(dicname)
+        # 画颜色填充的Voronoi图
+        ArrRGB,inter_cnt,out_cnt = get_ArrRGB(Arr,inter_cnt,out_cnt)
+        img = Image.fromarray(ArrRGB, "RGB")  # 彩色图像，使用参数'RGB'
+        dicname = '../result/500_500_10_area/' + str(R) + '_' + str(inter_cnt) + '_' + str(out_cnt) + '.bmp'
+        img.save(dicname)
 
 
         cnt = 0# 最终扩张终止标志位
@@ -284,24 +316,28 @@ if __name__ == '__main__':
             if flag[i] == 0:
                 cnt = cnt + 1  # 元素0的个数
         if cnt != len(flag):  # 没有超出屏幕范围
-            R = R + 1
+            if R > R_limit:# 是否超过限制的扩张半径
+                print('--已达到限制的扩张半径--')
+                break
+            else:
+                R = R + 1
         else:
             print('--全部栅格超出边界--')
             break
 
     # 画颜色填充的Voronoi图
-    ArrRGB = get_ArrRGB(Arr)
-    img = Image.fromarray(ArrRGB, "RGB")  # 彩色图像，使用参数'RGB'
-    dicname2 = '../result/'+ str(length) + '_' + str(width) + '_' + str(count) +  '_color.bmp'
-    img.save(dicname2)
-    img.show()
+    # ArrRGB = get_ArrRGB(Arr,inter_cnt,out_cnt)
+    # img = Image.fromarray(ArrRGB, "RGB")  # 彩色图像，使用参数'RGB'
+    # dicname2 = '../result/'+ str(length) + '_' + str(width) + '_' + str(count) +  '_area.bmp'
+    # img.save(dicname2)
+    # img.show()
 
     # 画黑白边界Voronoi图
-    ArrLine = get_ArrLine(length, width, Arr)
-    img2 = Image.fromarray(ArrLine, "L")  # 灰度图像，使用参数'L'
-    dicname3 = '../result/' + str(length) + '_' + str(width) + '_' + str(count) + '_dark.bmp'
-    img2.save(dicname3)
-    img2.show()
+    # ArrLine = get_ArrLine(length, width, Arr)
+    # img2 = Image.fromarray(ArrLine, "L")  # 灰度图像，使用参数'L'
+    # dicname3 = '../result/' + str(length) + '_' + str(width) + '_' + str(count) + '_dark.bmp'
+    # img2.save(dicname3)
+    # img2.show()
 
     # 计算程序运行时间
     endtime = datetime.datetime.now()

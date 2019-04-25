@@ -18,8 +18,8 @@ import numpy as np
 import threading
 
 points=[]
-length=400
-width=400
+length=500
+width=500
 count=10
 
 # 随机生成生长源

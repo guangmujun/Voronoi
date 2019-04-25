@@ -7,12 +7,10 @@ Created on 2019/4/14 14:47
 @function:逐点扫描法生成Voronoi图
 """
 import sys
-
-# Python Imaging Library图像处理标准库（#python3中安装：pip install Pillow）
 from PIL import Image
 from reference import Common
 import pickle
-
+import datetime
 
 def JudgeXY(x_in, y_in, points):
     """
@@ -105,17 +103,20 @@ def createVoronoi(length, width, points):
     return Arr
 
 if __name__=='__main__':
+    # 计算程序运行时间
+    starttime = datetime.datetime.now()
+
     points=[]
-    length=400
-    width=400
-    count=4
+    length=500
+    width=500
+    count=10
 
     # 随机生成生长源
     # for i in range(count):
     #     points.append(Common.getRndPoint(length,width))
     #     print('第 %s 个生长源：坐标（%s,%s）扇区权重%s 扇区方向角%s \n扇区RGB颜色%s' %(i,points[i].x,points[i].y,points[i].vs,points[i].ts,points[i].colors))
 
-    pkl_file = open('./data_400_400_4.pkl', 'rb')
+    pkl_file = open('../data/points_500_500_10.pkl', 'rb')
     points = pickle.load(pkl_file)
     pkl_file.close()
 
@@ -145,3 +146,7 @@ if __name__=='__main__':
     img2 = Image.fromarray(ArrLine, "L")# 灰度图像，使用参数'L'
     img2.save('../result/black.bmp')
     img2.show()
+
+    # 计算程序运行时间
+    endtime = datetime.datetime.now()
+    print("耗时(s)：" + str((endtime - starttime).seconds))

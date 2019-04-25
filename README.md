@@ -14,4 +14,6 @@ scan_point.py            逐点扫描算法
 
 u_scatter_final.py     基于逐点扫描涂色原理的离散构造优化算法
 
+u_scatter_area.py     重叠区和盲区的面积计算
+
 ./reference/Common 使用到的相关自定义函数
